@@ -16,7 +16,13 @@ import { readFile } from 'fs/promises';
 export class MachineLearningRepository implements IMachineLearningRepository {
   private async post<T>(url: string, input: TextModelInput | VisionModelInput, config: ModelConfig): Promise<T> {
     const formData = await this.getFormData(input, config);
-    const res = await fetch(`${url}/predict`, { method: 'POST', body: formData });
+    const res = await fetch(`${url}/predict`, { method: 'POST', body: formData }).catch((error) => {
+      if (error['cause']['code'] === 'ENOTFOUND') {
+        throw new Error(`Cannot connect to ${url}`);
+      }
+      throw error;
+    });
+
     if (res.status >= 400) {
       throw new Error(
         `Request ${config.modelType ? `for ${config.modelType.replace('-', ' ')} ` : ''}` +
